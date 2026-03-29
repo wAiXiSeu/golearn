@@ -1,0 +1,87 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --board-size: min(100vw - 2rem, 600px);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #f8f9fa;
+  color: #1a1a1a;
+}
+
+.goban-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.board-grid {
+  background-color: #dcb35c;
+  border: 2px solid #8b7355;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.intersection {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.stone {
+  border-radius: 50%;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.stone:hover {
+  transform: scale(1.05);
+}
+
+.stone-black {
+  background: radial-gradient(circle at 30% 30%, #4a4a4a, #1a1a1a);
+  border: 1px solid #0a0a0a;
+}
+
+.stone-white {
+  background: radial-gradient(circle at 30% 30%, #ffffff, #e8e8e8);
+  border: 1px solid #d0d0d0;
+}
+
+.star-point {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background-color: #8b7355;
+  border-radius: 50%;
+}
+
+.last-move-marker {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #ff4444;
+}
+
+@media (max-width: 768px) {
+  .board-grid {
+    max-width: calc(100vw - 1rem);
+  }
+}
