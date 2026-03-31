@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Board } from '../components/goban/Board'
 import { useGameStore } from '../stores/gameStore'
 import type { Position, Move } from '../types/game'
 import { generateSGF, parseSGF, sgfToGameState } from '../engine/sgf'
 import { Territory } from '../engine/territory'
+import { isPassPosition } from '../types/game'
 
 const COL_LABELS = 'ABCDEFGHJKLMNOPQRST'
 
@@ -22,13 +23,33 @@ function Review() {
     setTimeout(() => setNotification(null), 3000)
   }
 
+  const stopPlaying = useCallback(() => {
+    setIsPlaying(false)
+  }, [])
+
+  useEffect(() => {
+    if (!isPlaying || moves.length === 0) return
+    
+    const timer = setInterval(() => {
+      setCurrentMoveIndex(prev => {
+        if (prev >= moves.length - 1) {
+          stopPlaying()
+          return prev
+        }
+        return prev + 1
+      })
+    }, 500)
+    
+    return () => clearInterval(timer)
+  }, [isPlaying, moves.length, stopPlaying])
+
   const getBoardAtMove = (moveIndex: number) => {
     const size = boardSize
     const boardState = Array(size).fill(null).map(() => Array(size).fill(null))
     
     for (let i = 0; i <= moveIndex && i < moves.length; i++) {
       const move = moves[i]
-      if (move.position.x >= 0 && move.position.y >= 0) {
+      if (!isPassPosition(move.position)) {
         boardState[move.position.y][move.position.x] = move.color
         for (const captured of move.captured) {
           boardState[captured.y][captured.x] = null
@@ -120,7 +141,7 @@ function Review() {
   }
 
   const formatMove = (move: Move, index: number): string => {
-    if (move.position.x < 0) {
+    if (isPassPosition(move.position)) {
       return `${index + 1}. ${move.color === 'black' ? '黑' : '白'}: 虚手`
     }
     const col = COL_LABELS[move.position.x]
@@ -130,7 +151,7 @@ function Review() {
 
   const displayBoard = currentMoveIndex >= 0 ? getBoardAtMove(currentMoveIndex) : board
   const currentMove = currentMoveIndex >= 0 ? moves[currentMoveIndex] : null
-  const lastMovePosition = currentMove && currentMove.position.x >= 0 ? currentMove.position : null
+  const lastMovePosition = currentMove && !isPassPosition(currentMove.position) ? currentMove.position : null
 
   const getTerritoryScore = () => {
     const territory = new Territory()
@@ -177,9 +198,9 @@ function Review() {
                 }`}
               />
               <span className="text-sm text-gray-600">
-                {currentMove.position.x >= 0
-                  ? `${COL_LABELS[currentMove.position.x]}${boardSize - currentMove.position.y}`
-                  : '虚手'}
+                {isPassPosition(currentMove.position)
+                  ? '虚手'
+                  : `${COL_LABELS[currentMove.position.x]}${boardSize - currentMove.position.y}`}
               </span>
             </div>
           )}
@@ -205,34 +226,35 @@ function Review() {
         <div className="mt-4 flex gap-2 flex-wrap justify-center">
           <button
             onClick={handleFirst}
-            disabled={currentMoveIndex < 0}
+            disabled={moves.length === 0}
             className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
           >
             开始
           </button>
           <button
             onClick={handlePrevious}
-            disabled={currentMoveIndex < 0}
+            disabled={currentMoveIndex < 0 || moves.length === 0}
             className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
           >
             上一步
           </button>
           <button
             onClick={handlePlayPause}
-            className="px-3 py-2 bg-blue-100 text-blue-800 rounded-lg text-sm font-medium hover:bg-blue-200"
+            disabled={moves.length === 0}
+            className="px-3 py-2 bg-blue-100 text-blue-800 rounded-lg text-sm font-medium hover:bg-blue-200 disabled:opacity-50"
           >
             {isPlaying ? '暂停' : '播放'}
           </button>
           <button
             onClick={handleNext}
-            disabled={currentMoveIndex >= moves.length - 1}
+            disabled={currentMoveIndex >= moves.length - 1 || moves.length === 0}
             className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
           >
             下一步
           </button>
           <button
             onClick={handleLast}
-            disabled={currentMoveIndex >= moves.length - 1}
+            disabled={moves.length === 0}
             className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
           >
             最后

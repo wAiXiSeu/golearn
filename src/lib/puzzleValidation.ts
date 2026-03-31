@@ -155,8 +155,14 @@ export function calculateCaptures(
     if (board[neighbor.y]?.[neighbor.x] === opponent) {
       const group = getGroup(board, neighbor);
       const liberties = getLiberties(board, group);
-      if (liberties.length === 0) {
-        captured.push(...group);
+      const remainingLiberties = liberties.filter(lib => !(lib.x === move.x && lib.y === move.y));
+      
+      if (remainingLiberties.length === 0) {
+        for (const stone of group) {
+          if (!captured.some(c => c.x === stone.x && c.y === stone.y)) {
+            captured.push(stone);
+          }
+        }
       }
     }
   }

@@ -54,33 +54,28 @@ describe('puzzleValidation', () => {
     it('detects single stone capture', () => {
       const board = createEmptyBoard(9);
       board[4][4] = 'white';
-      board[3][4] = 'black';
-      board[5][4] = 'black';
       board[4][3] = 'black';
       board[4][5] = 'black';
+      board[3][4] = 'black';
 
       const captures = calculateCaptures(board, { x: 4, y: 5 }, 'black');
-      expect(captures).toHaveLength(0);
-
-      const newBoard = cloneBoard(board);
-      newBoard[4][5] = 'black';
-      const capturesAfterMove = calculateCaptures(newBoard, { x: 4, y: 4 }, 'black');
-      expect(capturesAfterMove).toContainEqual({ x: 4, y: 4 });
+      expect(captures).toContainEqual({ x: 4, y: 4 });
     });
 
     it('detects group capture', () => {
       const board = createEmptyBoard(9);
       board[4][4] = 'white';
-      board[4][5] = 'white';
-      board[3][4] = 'black';
-      board[5][4] = 'black';
-      board[3][5] = 'black';
-      board[5][5] = 'black';
+      board[5][4] = 'white';
       board[4][3] = 'black';
-      board[4][6] = 'black';
+      board[4][5] = 'black';
+      board[5][3] = 'black';
+      board[5][5] = 'black';
+      board[3][4] = 'black';
 
       const captures = calculateCaptures(board, { x: 4, y: 6 }, 'black');
       expect(captures.length).toBe(2);
+      expect(captures).toContainEqual({ x: 4, y: 4 });
+      expect(captures).toContainEqual({ x: 4, y: 5 });
     });
   });
 
@@ -88,13 +83,13 @@ describe('puzzleValidation', () => {
     it('places stone and returns captured stones', () => {
       const board = createEmptyBoard(9);
       board[4][4] = 'white';
-      board[3][4] = 'black';
-      board[5][4] = 'black';
       board[4][3] = 'black';
+      board[4][5] = 'black';
+      board[3][4] = 'black';
 
       const { newBoard, captured } = applyMove(board, { x: 4, y: 5 }, 'black');
       
-      expect(newBoard[4][5]).toBe('black');
+      expect(newBoard[5][4]).toBe('black');
       expect(captured).toContainEqual({ x: 4, y: 4 });
       expect(newBoard[4][4]).toBeNull();
     });
@@ -118,10 +113,11 @@ describe('puzzleValidation', () => {
     };
 
     beforeEach(() => {
+      simplePuzzle.initialBoard = createEmptyBoard(9);
       simplePuzzle.initialBoard[4][4] = 'white';
-      simplePuzzle.initialBoard[3][4] = 'black';
-      simplePuzzle.initialBoard[5][4] = 'black';
       simplePuzzle.initialBoard[4][3] = 'black';
+      simplePuzzle.initialBoard[4][5] = 'black';
+      simplePuzzle.initialBoard[3][4] = 'black';
     });
 
     it('validates correct move', () => {

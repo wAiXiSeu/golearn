@@ -1,4 +1,5 @@
 import type { Position, GameState, BoardState } from '../types/game';
+import { PASS_POSITION, isPassPosition } from '../types/game';
 
 // SGF Node represents a single node in the SGF tree
 export type SGFNode = {
@@ -207,7 +208,13 @@ function parseSGFTree(tokens: { type: 'property' | 'value'; data: string }[], in
 
 // Extract game metadata from root node
 function extractGameMetadata(root: SGFNode): Partial<SGFGame> {
-  const props = root.properties;
+  // If root node is empty (has no properties), metadata might be in first child
+  let node = root
+  if (Object.keys(root.properties).length === 0 && root.children.length > 0) {
+    node = root.children[0]
+  }
+  
+  const props = node.properties;
   
   return {
     gm: props.GM ? parseInt(props.GM[0], 10) : 1,
@@ -393,14 +400,19 @@ export function sgfToGameState(parsed: ParsedSGF): GameState {
     isGameOver: false,
   };
   
-  // Apply moves (simplified - doesn't handle captures properly, just records positions)
   for (const move of moves) {
     if (move.position === 'pass') {
       gameState.passCount++;
+      gameState.moves.push({
+        position: PASS_POSITION,
+        color: move.color,
+        captured: [],
+      });
       if (gameState.passCount >= 2) {
         gameState.isGameOver = true;
       }
     } else {
+      gameState.passCount = 0;
       const { x, y } = move.position;
       if (board[y] && board[y][x] === null) {
         board[y][x] = move.color;
@@ -414,7 +426,6 @@ export function sgfToGameState(parsed: ParsedSGF): GameState {
     gameState.currentPlayer = move.color === 'black' ? 'white' : 'black';
   }
   
-  // Add metadata
   if (game.re) {
     gameState.result = game.re;
     if (game.re.includes('B+')) {
@@ -479,8 +490,12 @@ export function generateSGF(gameState: GameState, metadata?: Partial<SGFGame>): 
   // Add moves
   for (const move of gameState.moves) {
     sgf += ';';
-    const coord = positionToSGF(move.position, boardSize);
-    sgf += move.color === 'black' ? `B[${coord}]` : `W[${coord}]`;
+    if (isPassPosition(move.position)) {
+      sgf += move.color === 'black' ? 'B[]' : 'W[]';
+    } else {
+      const coord = positionToSGF(move.position, boardSize);
+      sgf += move.color === 'black' ? `B[${coord}]` : `W[${coord}]`;
+    }
   }
   
   sgf += ')';

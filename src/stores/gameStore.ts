@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { GameState, GameSettings, Position, BoardState, Move } from '../types/game'
 import { createEmptyBoard } from '../lib/utils'
-import { DEFAULT_BOARD_SIZE } from '../types/game'
+import { DEFAULT_BOARD_SIZE, PASS_POSITION, isPassPosition } from '../types/game'
 import { Rules } from '../engine/rules'
 
 type GameStore = {
@@ -125,10 +125,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const newPassCount = gameState.passCount + 1
     const isGameOver = newPassCount >= 2
     
+    const passMove: Move = {
+      position: PASS_POSITION,
+      color: gameState.currentPlayer,
+      captured: [],
+      timestamp: Date.now(),
+    }
+    
     set({
       gameState: {
         ...gameState,
         currentPlayer: gameState.currentPlayer === 'black' ? 'white' : 'black',
+        moves: [...gameState.moves, passMove],
         passCount: newPassCount,
         isGameOver,
         winner: isGameOver ? null : undefined,
@@ -145,11 +153,24 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const lastMove = gameState.moves[gameState.moves.length - 1]
     const newMoves = gameState.moves.slice(0, -1)
     
-    const newBoard = gameState.board.map(row => [...row])
-    newBoard[lastMove.position.y][lastMove.position.x] = null
+    let newBoard = gameState.board
+    let newCaptures = { ...gameState.captures }
+    let newPassCount = gameState.passCount
     
-    for (const captured of lastMove.captured) {
-      newBoard[captured.y][captured.x] = lastMove.color === 'black' ? 'white' : 'black'
+    if (isPassPosition(lastMove.position)) {
+      newPassCount = Math.max(0, gameState.passCount - 1)
+    } else {
+      newBoard = gameState.board.map(row => [...row])
+      newBoard[lastMove.position.y][lastMove.position.x] = null
+      
+      for (const captured of lastMove.captured) {
+        newBoard[captured.y][captured.x] = lastMove.color === 'black' ? 'white' : 'black'
+      }
+      
+      newCaptures = {
+        black: gameState.captures.black - (lastMove.color === 'black' ? lastMove.captured.length : 0),
+        white: gameState.captures.white - (lastMove.color === 'white' ? lastMove.captured.length : 0),
+      }
     }
     
     set({
@@ -158,11 +179,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
         board: newBoard,
         currentPlayer: lastMove.color,
         moves: newMoves,
-        captures: {
-          black: gameState.captures.black - (lastMove.color === 'black' ? lastMove.captured.length : 0),
-          white: gameState.captures.white - (lastMove.color === 'white' ? lastMove.captured.length : 0),
-        },
-        passCount: 0,
+        captures: newCaptures,
+        passCount: newPassCount,
         isGameOver: false,
         koPoint: null,
       },

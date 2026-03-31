@@ -5,6 +5,12 @@ export type Position = {
   y: number;
 };
 
+export const PASS_POSITION: Position = { x: -1, y: -1 };
+
+export function isPassPosition(pos: Position): boolean {
+  return pos.x === -1 && pos.y === -1;
+}
+
 export type BoardState = StoneColor[][];
 
 export type Move = {
